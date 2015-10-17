@@ -11,7 +11,7 @@ public enum BonusType
 public static class BonusTypeUtilities
 {
 	// Helper method to check for specific bonus type
-	public static bool ContainsDestroyWHoleRowClumn(BonusType bt)
+	public static bool ContainsDestroyWholeRowColumn(BonusType bt)
 	{
 		return (bt & BonusType.DestroyWholeRowColumn) == BonusType.DestroyWholeRowColumn;
 	}

@@ -1,15 +1,40 @@
-﻿using UnityEngine;
-using System.Collections;
+﻿using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 
-public class MatchesInfo : MonoBehaviour {
+// This class contains useful information about the glyphs that were matches (either a match of three or more).
+public class MatchesInfo {
 
-	// Use this for initialization
-	void Start () {
-	
+	private List<GameObject> matchedGlyphs;
+	public BonusType BonusesContained { get; set; }
+
+	public MatchesInfo()
+	{
+		matchedGlyphs = new List<GameObject>();
+		BonusesContained = BonusType.None;
 	}
-	
-	// Update is called once per frame
-	void Update () {
-	
+
+	public void AddObject(GameObject go)
+	{
+		if (!matchedGlyphs.Contains(go))
+		{
+			matchedGlyphs.Add(go);
+		}
+	}
+
+	public void AddObjectRange(IEnumerable<GameObject> gos)
+	{
+		foreach (var item in gos)
+		{
+			AddObject(item);
+		}
+	}
+
+	public IEnumerable<GameObject> MatchedGlyph
+	{
+		get
+		{
+			return matchedGlyphs.Distinct();
+		}
 	}
 }
