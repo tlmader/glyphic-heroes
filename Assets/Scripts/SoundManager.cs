@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using System.Collections;
 
 public class SoundManager : MonoBehaviour {
 
@@ -13,7 +12,7 @@ public class SoundManager : MonoBehaviour {
 
 	AudioSource AddAudio(AudioClip audioClip)
 	{
-		AudioSource audioSource = this.addgameObject.AddComponent<AudioSource>();
+		AudioSource audioSource = gameObject.AddComponent<AudioSource>();
 		audioSource.playOnAwake = false;
 		audioSource.clip = audioClip;
 		return audioSource;

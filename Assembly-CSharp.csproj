@@ -48,9 +48,11 @@
      <Compile Include="Assets\Scripts\AlteredGlyphInfo.cs" />
      <Compile Include="Assets\Scripts\Constants.cs" />
      <Compile Include="Assets\Scripts\Enums.cs" />
+     <Compile Include="Assets\Scripts\InitializeGlyphAndSpawnPositions.cs" />
      <Compile Include="Assets\Scripts\MatchesInfo.cs" />
      <Compile Include="Assets\Scripts\Shape.cs" />
      <Compile Include="Assets\Scripts\ShapesArray.cs" />
+     <Compile Include="Assets\Scripts\ShapesManager.cs" />
      <Compile Include="Assets\Scripts\SoundManager.cs" />
      <Compile Include="Assets\Scripts\Utilities.cs" />
  <Reference Include="UnityEngine.UI">
