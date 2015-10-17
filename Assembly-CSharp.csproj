@@ -45,7 +45,14 @@
 	</Reference>
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="Assets\Scripts\Gem.cs" />
+     <Compile Include="Assets\Scripts\AlteredGlyphInfo.cs" />
+     <Compile Include="Assets\Scripts\Constants.cs" />
+     <Compile Include="Assets\Scripts\Enums.cs" />
+     <Compile Include="Assets\Scripts\MatchesInfo.cs" />
+     <Compile Include="Assets\Scripts\Shape.cs" />
+     <Compile Include="Assets\Scripts\ShapesArray.cs" />
+     <Compile Include="Assets\Scripts\SoundManager.cs" />
+     <Compile Include="Assets\Scripts\Utilities.cs" />
  <Reference Include="UnityEngine.UI">
  <HintPath>D:/Program Files/Unity/Editor/Data/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
  </Reference>
