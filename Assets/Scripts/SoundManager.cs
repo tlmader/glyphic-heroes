@@ -3,13 +3,24 @@ using System.Collections;
 
 public class SoundManager : MonoBehaviour {
 
-	// Use this for initialization
-	void Start () {
-	
+	public AudioClip glyphAudioClip;
+	AudioSource glyph;
+
+	void Awake()
+	{
+		glyph = AddAudio(glyphAudioClip);
 	}
-	
-	// Update is called once per frame
-	void Update () {
-	
+
+	AudioSource AddAudio(AudioClip audioClip)
+	{
+		AudioSource audioSource = this.addgameObject.AddComponent<AudioSource>();
+		audioSource.playOnAwake = false;
+		audioSource.clip = audioClip;
+		return audioSource;
+	}
+
+	public void PlayGlyph()
+	{
+		glyph.Play();
 	}
 }
