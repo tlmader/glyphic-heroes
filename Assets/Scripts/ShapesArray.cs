@@ -23,7 +23,7 @@ public class ShapesArray : MonoBehaviour {
 			}
 			catch (Exception ex)
 			{
-				throw;
+				throw ex;
 			}
 		}
 		set
