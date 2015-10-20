@@ -56,7 +56,7 @@ public class ShapesArray : MonoBehaviour {
 		Shape.SwapColumnRow(g1Shape, g2Shape);
 	}
 
-	// This method will undo the swap by simply calling the Swap method on the backup GameObjects
+	// Undoes the swap by simply calling the Swap method on the backup GameObjects
 	public void UndoSwap()
 	{
 		if (backupG1 == null || backupG2 == null)
@@ -66,7 +66,7 @@ public class ShapesArray : MonoBehaviour {
 		Swap(backupG1, backupG2);
 	}
 
-	// This method does a horizontal check for matches checking
+	// Performs a horizontal check for matches checking
 	private IEnumerable<GameObject> GetMatchesHorizontally(GameObject go)
 	{
 		List<GameObject> matches = new List<GameObject>();
@@ -112,7 +112,7 @@ public class ShapesArray : MonoBehaviour {
 		return matches.Distinct();
 	}
 
-	// This method does a horizontal check for matches checking
+	// Performs a horizontal check for matches checking
 	private IEnumerable<GameObject> GetMatchesVertically(GameObject go)
 	{
 		List<GameObject> matches = new List<GameObject>();
@@ -185,8 +185,7 @@ public class ShapesArray : MonoBehaviour {
 		return matches;
 	}
 
-	// Checks if a collection of matches contains a bonus glyph with type "DestroyRowColumn."
-	// This marks the entire row/column to be removed later.
+	// Checks if a collection of matches contains a bonus glyph with type "DestroyRowColumn"
 	private bool ContainsDestroyRowColumnBonus(IEnumerable<GameObject> matches)
 	{
 		if (matches.Count() >= Constants.MinimumMatches)
@@ -202,11 +201,7 @@ public class ShapesArray : MonoBehaviour {
 		return false;
 	}
 
-	// Checks for horizontal matches.
-	// If there are any bonuses there, it will retrieve the entire row. It will also add the DestroyWholeRowColumn
-	// bonus flag to the matchesInfo.BonusesContained property if it does not already exist.
-	// Adds the horizontal matches to the MatchesInfo instance.
-	// Repeats the same 3 steps while checking vertically.
+	// Checks for horizontal matches
 	public MatchesInfo GetMatches(GameObject go)
 	{
 		MatchesInfo matchesInfo = new MatchesInfo();
@@ -236,8 +231,7 @@ public class ShapesArray : MonoBehaviour {
 		return matchesInfo;
 	}
 
-	// This overload gets a collection of GameObjects as a parameter.
-	// For each one, it will use the previously described overload to check for matches.
+	// This overload gets a collection of GameObjects as a parameter
 	public IEnumerable<GameObject> GetMatches(IEnumerable<GameObject> gos)
 	{
 		List<GameObject> matches = new List<GameObject>();
@@ -254,12 +248,7 @@ public class ShapesArray : MonoBehaviour {
 		shapes[item.GetComponent<Shape>().Row, item.GetComponent<Shape>().Column] = null;
 	}
 
-	// Collapses the remaining glyphs in the specified columns, after the matched glyphs removal.
-	// It searches for null items. If it finds any, it will move the nearest top glyph to the null item position.
-	// It will continue until all null items are stacked on top positions of the column.
-	// It will calculate the max distance a glyph will have to be moved - this will assist in calculating the
-	// animation duration.
-	// All the required information is passed into an AlteredGlyphInfo class, which is returned to the caller.
+	// Collapses the remaining glyphs in the specified columns, after the matched glyphs removal
 	public AlteredGlyphInfo Collapse(IEnumerable<int> columns)
 	{
 		AlteredGlyphInfo collapseInfo = new AlteredGlyphInfo();
