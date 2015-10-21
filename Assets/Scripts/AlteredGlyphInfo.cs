@@ -20,7 +20,7 @@ public class AlteredGlyphInfo {
     }
 
     // Method to add a new glyph to the list
-    public void AddCandy(GameObject go)
+    public void AddGlyph(GameObject go)
     {
         if (!newGlyph.Contains(go))
         {

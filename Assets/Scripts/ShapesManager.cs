@@ -123,7 +123,50 @@ public class ShapesManager : MonoBehaviour
 
 	void Update()
 	{
+		if (state == GameState.None)
+		{
+			// User has clicked or touched
+			if (Input.GetMouseButtonDown(0))
+			{
+				// Get the hit position
+				var hit = Physics2D.Raycast(Camera.main.ScreenToWorldPoint(Input.mousePosition), Vector2.zero);
 
+				// If there is a hit
+				if (hit.collider != null)
+				{
+					hitGo = hit.collider.gameObject;
+					state = GameState.SelectionStarted;
+				}
+			}
+		}
+		else if (state == GameState.SelectionStarted)
+		{
+			// User dragged
+			if (Input.GetMouseButton(0))
+			{
+				var hit = Physics2D.Raycast(Camera.main.ScreenToWorldPoint(Input.mousePosition), Vector2.zero);
+				
+				// If there is a hit
+				if (hit.collider != null && hitGo != hit.collider.gameObject)
+				{
+					// Hide hints
+					StopCheckForPotentialMatches();
+
+					// If the two shapes are diagonally aligned (different row and column), return
+					if (!Utilities.AreVerticalOrHorizontalNeighbors(hitGo.GetComponent<Shape>(),
+						hit.collider.gameObject.GetComponent<Shape>()))
+					{
+						state = GameState.None;
+					}
+					else
+					{
+						state = GameState.Animating;
+						FixSortingLayer(hitGo, hit.collider.gameObject);
+						StartCoroutine(FindMatchesAndCollapse(hit));
+					}
+				}
+			}
+		}
 	}
 
 	// Initializes the score variables
@@ -131,7 +174,7 @@ public class ShapesManager : MonoBehaviour
 	// Reinitializes the array and the spawn positions for the new glyphs
 	// Loops through all the array elements and creates new glyphs while not creating matches
 
-	public void InitializeGlyphSpawnPositions()
+	public void InitializeGlyphAndSpawnPositions()
 	{
 		InitializeVariables();
 
@@ -282,33 +325,160 @@ public class ShapesManager : MonoBehaviour
 	{
 		foreach (var item in movedGameObjects)
 		{
-			item.transform.positionTo(Constants.MoveAnimationMinDuration * distance, BottomRight +
-				new Vector2(item.GetComponent<Shape>().Column * GlyphSize.x, item.GetComponent<Shape>().Row * GlyphSize.y));
+			item.transform.positionTo(Constants.MoveAnimationMinDuration * distance,
+				BottomRight + new Vector2(item.GetComponent<Shape>().Column * GlyphSize.x,
+				item.GetComponent<Shape>().Row * GlyphSize.y));
 		}
 	}
 
+	// Takes the columns that have been missing glyphs as a parameter
 	private AlteredGlyphInfo CreateNewGlyphsInSpecificColumns(IEnumerable<int> columnsWithMissingGlyphs)
 	{
+		AlteredGlyphInfo newGlyphInfo = new AlteredGlyphInfo();
 
+		// Find how many null values the column has
+		foreach (int column in columnsWithMissingGlyphs)
+		{
+			var emptyItems = shapes.GetEmptyItemsOnColumn(column);
+			foreach (var item in emptyItems)
+			{
+				var go = GetRandomGlyph();
+				GameObject newGlyph = Instantiate(go, SpawnPositions[column], Quaternion.identity)
+					as GameObject;
+
+				newGlyph.GetComponent<Shape>().Assign(go.GetComponent<Shape>().Type, item.Row, item.Column);
+
+				if (Constants.Rows - item.Row > newGlyphInfo.MaxDistance)
+				{
+					newGlyphInfo.MaxDistance = Constants.Rows - item.Row;
+				}
+
+				shapes[item.Row, item.Column] = newGlyph;
+				newGlyphInfo.AddGlyph(newGlyph);
+			}
+		}
+
+		return newGlyphInfo;
 	}
 
+	// Creates a new bonus based on the glyph type given as parameter,
+	// assigns the new GameObject to its proper position in the array,
+	// sets necessary variables via the Assign method,
+	// adds the DestroyWholeRowColumn bonus type to the Bonus property
 	private void CreateBonus(Shape hitGoCache)
 	{
+		GameObject Bonus = Instantiate(GetBonusFromType(hitGoCache.Type), BottomRight
+			+ new Vector2(hitGoCache.Column * GlyphSize.x, hitGoCache.Row * GlyphSize.y), Quaternion.identity)
+			as GameObject;
+		shapes[hitGoCache.Row, hitGoCache.Column] = Bonus;
+		var BonusShape = Bonus.GetComponent<Shape>();
 
+		// Will have the same type as the "normal" glyph
+		BonusShape.Assign(hitGoCache.Type, hitGoCache.Row, hitGoCache.Column);
+
+		// Add the proper Bonus type
+		BonusShape.Bonus |= BonusType.DestroyWholeRowColumn;
 	}
 
 	private IEnumerator FindMatchesAndCollapse(RaycastHit2D hit2)
 	{
+		// Get the second item that was part of the swipe
+		var hitGo2 = hit2.collider.gameObject;
+		shapes.Swap(hitGo, hitGo2);
 
-	}
+		// Move the swapped ones
+		hitGo.transform.positionTo(Constants.AnimationDuration, hitGo2.transform.position);
+		hitGo2.transform.positionTo(Constants.AnimationDuration, hitGo.transform.position);
+		yield return new WaitForSeconds(Constants.AnimationDuration);
 
-	private GameObject GetSpecificGlyphOrBonusForPremadeLevel(string info)
-	{
+		// Get the matches via the helper methods
+		var hitGoMatchesInfo = shapes.GetMatches(hitGo);
+		var hitGo2MatchesInfo = shapes.GetMatches(hitGo2);
 
-	}
+		var totalMatches = hitGoMatchesInfo.MatchedGlyph.Union(hitGo2MatchesInfo.MatchedGlyph).Distinct();
 
-	private void InitializeGlyphAndSpawnPositionsFromPremadeLevel()
-	{
+		// If the swap did not create at least a 3-match, undo the swap
+		if (totalMatches.Count() < Constants.MinimumMatches)
+		{
+			hitGo.transform.positionTo(Constants.AnimationDuration, hitGo2.transform.position);
+			hitGo2.transform.positionTo(Constants.AnimationDuration, hitGo.transform.position);
+			yield return new WaitForSeconds(Constants.AnimationDuration);
 
+			shapes.UndoSwap();
+		}
+
+		// If more than 3 matches and no Bonus is contained in the line, award a new Bonus
+		bool addBonus = totalMatches.Count() >= Constants.MinimumMatchesForBonus &&
+			!BonusTypeUtilities.ContainsDestroyWholeRowColumn(hitGoMatchesInfo.BonusesContained) &&
+			!BonusTypeUtilities.ContainsDestroyWholeRowColumn(hitGo2MatchesInfo.BonusesContained);
+
+		Shape hitGoCache = null;
+		if (addBonus)
+		{
+			hitGoCache = new Shape();
+
+			// Get the game object that was of the same type
+			var sameTypeGo = hitGoMatchesInfo.MatchedGlyph.Count() > 0 ? hitGo : hitGo2;
+			var shape = sameTypeGo.GetComponent<Shape>();
+
+			// Cache the game object
+			hitGoCache.Assign(shape.Type, shape.Row, shape.Column);
+		}
+
+		int timesRun = 1;
+		while (totalMatches.Count() >= Constants.MinimumMatches)
+		{
+			// Increase score
+			IncreaseScore((totalMatches.Count() - 2) * Constants.Match3Score);
+
+			if (timesRun >= 2)
+			{
+				IncreaseScore(Constants.SubsequentMatchScore);
+			}
+
+			soundManager.PlayGlyph();
+
+			foreach (var item in totalMatches)
+			{
+				shapes.Remove(item);
+				RemoveFromScene(item);
+			}
+
+			// Check and instantiate Bonus if needed
+			if (addBonus)
+			{
+				CreateBonus(hitGoCache);
+			}
+
+			addBonus = false;
+
+			// Get the columns that have a collapse
+			var columns = totalMatches.Select(go => go.GetComponent<Shape>().Column).Distinct();
+
+			// The order the two methods below get called is important
+
+			// Collapse the ones gone
+			var collapsedGlyphInfo = shapes.Collapse(columns);
+
+			// Create new ones
+			var newGlyphInfo = CreateNewGlyphsInSpecificColumns(columns);
+
+			int maxDistance = Mathf.Max(collapsedGlyphInfo.MaxDistance, newGlyphInfo.MaxDistance);
+
+			MoveAndAnimate(newGlyphInfo.AlteredGlyph, maxDistance);
+			MoveAndAnimate(collapsedGlyphInfo.AlteredGlyph, maxDistance);
+
+			// Wait for both of the above animations
+			yield return new WaitForSeconds(Constants.MoveAnimationMinDuration * maxDistance);
+
+			// Search if there are matches with the new/collapsed items
+			totalMatches = shapes.GetMatches(collapsedGlyphInfo.AlteredGlyph).
+				Union(shapes.GetMatches(newGlyphInfo.AlteredGlyph)).Distinct();
+
+			timesRun++;
+		}
+
+		state = GameState.None;
+		StartCheckForPotentialMatches();
 	}
 }
