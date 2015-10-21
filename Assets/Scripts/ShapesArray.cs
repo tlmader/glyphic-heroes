@@ -281,7 +281,7 @@ public class ShapesArray : MonoBehaviour {
 							shapes[row, column].GetComponent<Shape>().Row = row;
 							shapes[row, column].GetComponent<Shape>().Column = column;
 
-							collapseInfo.AddCandy(shapes[row, column]);
+							collapseInfo.AddGlyph(shapes[row, column]);
 							break;
                         }
 					}
