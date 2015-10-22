@@ -47,14 +47,16 @@ public class ShapesManager : MonoBehaviour
 		StartCheckForPotentialMatches();
 	}
 
-	// 
+	// Initialize shapes
 	private void InitializeTypesOnPrefabShapesAndBonuses()
 	{
+		// Assign the name of the prefab
 		foreach (var item in GlyphPrefabs)
 		{
 			item.GetComponent<Shape>().Type = item.name;
 		}
 
+		// Assign the name of the respective "normal" glpyh as the type of the bonus
 		foreach (var item in BonusPrefabs)
 		{
 			item.GetComponent<Shape>().Type = GlyphPrefabs.
@@ -62,28 +64,49 @@ public class ShapesManager : MonoBehaviour
 		}
 	}
 
+	// Initializes the score variables
+	// Destroys all elements in the array
+	// Reinitializes the array and the spawn positions for the new glyphs
+	// Loops through all the array elements and creates new glyphs while not creating matches
+	public void InitializeGlyphAndSpawnPositions()
+	{
+		InitializeVariables();
 
-	// Score-related methods
-	private void InitializeVariables()
-	{
-		score = 0;
-		ShowScore();
-	}
+		if (shapes != null)
+		{
+			DestroyAllGlyphs();
+		}
 
-	private void IncreaseScore(int amount)
-	{
-		score += amount;
-		ShowScore();
-	}
+		shapes = new ShapesArray();
+		SpawnPositions = new Vector2[Constants.Columns];
 
-	private void ShowScore()
-	{
-		ScoreText.text = "Score: " + score.ToString();
-	}
-	
-	private GameObject GetRandomGlyph()
-	{
-		return GlyphPrefabs[Random.Range(0, GlyphPrefabs.Length)];
+		for (int row = 0; row < Constants.Rows; row++)
+		{
+			for (int column = 0; column < Constants.Columns; column++)
+			{
+				GameObject newGlyph = GetRandomGlyph();
+
+				// Check if two previous horizontal glyphs are of the same type
+				while (column >= 2 && shapes[row, column - 1].GetComponent<Shape>()
+					.IsSameType(newGlyph.GetComponent<Shape>())
+					&& shapes[row, column - 2].GetComponent<Shape>().IsSameType(newGlyph.GetComponent<Shape>()))
+				{
+					newGlyph = GetRandomGlyph();
+				}
+
+				// Check if two previous vertical glyphs are of the same type
+				while (row >= 2 && shapes[row - 1, column].GetComponent<Shape>()
+					.IsSameType(newGlyph.GetComponent<Shape>())
+					&& shapes[row - 2, column].GetComponent<Shape>().IsSameType(newGlyph.GetComponent<Shape>()))
+				{
+					newGlyph = GetRandomGlyph();
+				}
+
+				InstantiateAndPlaceNewGlyph(row, column, newGlyph);
+			}
+		}
+
+		SetupSpawnPositions();
 	}
 
 	// Creates a new glyph GameObject at the specified row and column at the specified position.
@@ -169,52 +192,6 @@ public class ShapesManager : MonoBehaviour
 		}
 	}
 
-	// Initializes the score variables
-	// Destroys all elements in the array
-	// Reinitializes the array and the spawn positions for the new glyphs
-	// Loops through all the array elements and creates new glyphs while not creating matches
-
-	public void InitializeGlyphAndSpawnPositions()
-	{
-		InitializeVariables();
-
-		if (shapes != null)
-		{
-			DestroyAllGlyphs();
-		}
-
-		shapes = new ShapesArray();
-		SpawnPositions = new Vector2[Constants.Columns];
-
-		for (int row = 0; row < Constants.Rows; row++)
-		{
-			for (int column = 0; column < Constants.Columns; column++)
-			{
-				GameObject newGlyph = GetRandomGlyph();
-
-				// Check if two previous horizontal glyphs are of the same type
-				while (column >= 2 && shapes[row, column - 1].GetComponent<Shape>()
-					.IsSameType(newGlyph.GetComponent<Shape>())
-					&& shapes[row, column - 2].GetComponent<Shape>().IsSameType(newGlyph.GetComponent<Shape>()))
-				{
-					newGlyph = GetRandomGlyph();
-				}
-
-				// Check if two previous vertical glyphs are of the same type
-				while (row >= 2 && shapes[row - 1, column].GetComponent<Shape>()
-					.IsSameType(newGlyph.GetComponent<Shape>())
-					&& shapes[row - 2, column].GetComponent<Shape>().IsSameType(newGlyph.GetComponent<Shape>()))
-				{
-					newGlyph = GetRandomGlyph();
-				}
-
-				InstantiateAndPlaceNewGlyph(row, column, newGlyph);
-			}
-		}
-
-		SetupSpawnPositions();
-	}
-
 	// Used during a user swap to make sure that the dragged glyph will appear on top of the other onej
 	private void FixSortingLayer(GameObject hitGo, GameObject hitGo2)
 	{
@@ -225,159 +202,6 @@ public class ShapesManager : MonoBehaviour
 			sp1.sortingOrder = 1;
 			sp2.sortingOrder = 0;
 		}
-	}
-
-	// If there are any matches, animate them
-	private IEnumerator CheckPotentialMatches()
-	{
-		yield return new WaitForSeconds(Constants.WaitBeforePotentialMatchesCheck);
-		potentialMatches = Utilities.GetPotentialMatches(shapes);
-		if (potentialMatches != null)
-		{
-			while (true)
-			{
-				AnimatePotentialMatchesCoroutine = Utilities.AnimatePotentialMatches(potentialMatches);
-				StartCoroutine(AnimatePotentialMatchesCoroutine);
-				yield return new WaitForSeconds(Constants.WaitBeforePotentialMatchesCheck);
-			}
-		}
-	}
-
-	// Sets the opacity to default (1.0f) at the glyphs that were animated, as potential matches
-	private void ResetOpacityOnPotentialMatches()
-	{
-		if (potentialMatches != null)
-		{
-			foreach (var item in potentialMatches)
-			{
-				if (item == null)
-				{
-					break;
-				}
-
-				Color c = item.GetComponent<SpriteRenderer>().color;
-				c.a = 1.0f;
-				item.GetComponent<SpriteRenderer>().color = c;
-			}
-		}
-	}
-
-	// Stops the check if already running and starts the CheckPotentialMatches coroutine
-	private void StartCheckForPotentialMatches()
-	{
-		StopCheckForPotentialMatches();
-
-		// Get a reference to stop it later
-		CheckPotentialMatchesCoroutine = CheckPotentialMatches();
-		StartCoroutine(CheckPotentialMatchesCoroutine);
-	}
-
-	// Attempts to stop both the AnimatePotentialMatches and the CheckPotentialMatches coroutines
-	// Resets the opacity on the items that were previously animated
-	private void StopCheckForPotentialMatches()
-	{
-		if (AnimatePotentialMatchesCoroutine != null)
-		{
-			StopCoroutine(AnimatePotentialMatchesCoroutine);
-		}
-
-		if (CheckPotentialMatchesCoroutine != null)
-		{
-			StopCoroutine(CheckPotentialMatchesCoroutine);
-		}
-
-		ResetOpacityOnPotentialMatches();
-	}
-
-	// Returns a random explosion prefab
-	private GameObject GetRandomExplosion()
-	{
-		return ExplosionPrefabs[Random.Range(0, ExplosionPrefabs.Length)];
-	}
-
-	// Returns the bonus prefab that corresponds to a normal glyph type
-	private GameObject GetBonusFromType(string type)
-	{
-		string color = type.Split('_')[1].Trim();
-		foreach (var item in BonusPrefabs)
-		{
-			if (item.GetComponent<Shape>().Type.Contains(color))
-			{
-				return item;
-			}
-		}
-
-		throw new System.Exception("Wrong type");
-	}
-
-	// Creates a new explosion, sets it to be destroyed after a specified time, and destroys the glyph
-	// which is passed as a parameter
-	private void RemoveFromScene(GameObject item)
-	{
-		GameObject explosion = GetRandomExplosion();
-		var newExplosion = Instantiate(explosion, item.transform.position, Quaternion.identity) as GameObject;
-		Destroy(newExplosion, Constants.ExplosionDuration);
-		Destroy(item);
-	}
-
-	// Utilizes the GoKit animation library to animate a collection of GameObjects to their new position
-	private void MoveAndAnimate(IEnumerable<GameObject> movedGameObjects, int distance)
-	{
-		foreach (var item in movedGameObjects)
-		{
-			item.transform.positionTo(Constants.MoveAnimationMinDuration * distance,
-				BottomRight + new Vector2(item.GetComponent<Shape>().Column * GlyphSize.x,
-				item.GetComponent<Shape>().Row * GlyphSize.y));
-		}
-	}
-
-	// Takes the columns that have been missing glyphs as a parameter
-	private AlteredGlyphInfo CreateNewGlyphsInSpecificColumns(IEnumerable<int> columnsWithMissingGlyphs)
-	{
-		AlteredGlyphInfo newGlyphInfo = new AlteredGlyphInfo();
-
-		// Find how many null values the column has
-		foreach (int column in columnsWithMissingGlyphs)
-		{
-			var emptyItems = shapes.GetEmptyItemsOnColumn(column);
-			foreach (var item in emptyItems)
-			{
-				var go = GetRandomGlyph();
-				GameObject newGlyph = Instantiate(go, SpawnPositions[column], Quaternion.identity)
-					as GameObject;
-
-				newGlyph.GetComponent<Shape>().Assign(go.GetComponent<Shape>().Type, item.Row, item.Column);
-
-				if (Constants.Rows - item.Row > newGlyphInfo.MaxDistance)
-				{
-					newGlyphInfo.MaxDistance = Constants.Rows - item.Row;
-				}
-
-				shapes[item.Row, item.Column] = newGlyph;
-				newGlyphInfo.AddGlyph(newGlyph);
-			}
-		}
-
-		return newGlyphInfo;
-	}
-
-	// Creates a new bonus based on the glyph type given as parameter,
-	// assigns the new GameObject to its proper position in the array,
-	// sets necessary variables via the Assign method,
-	// adds the DestroyWholeRowColumn bonus type to the Bonus property
-	private void CreateBonus(Shape hitGoCache)
-	{
-		GameObject Bonus = Instantiate(GetBonusFromType(hitGoCache.Type), BottomRight
-			+ new Vector2(hitGoCache.Column * GlyphSize.x, hitGoCache.Row * GlyphSize.y), Quaternion.identity)
-			as GameObject;
-		shapes[hitGoCache.Row, hitGoCache.Column] = Bonus;
-		var BonusShape = Bonus.GetComponent<Shape>();
-
-		// Will have the same type as the "normal" glyph
-		BonusShape.Assign(hitGoCache.Type, hitGoCache.Row, hitGoCache.Column);
-
-		// Add the proper Bonus type
-		BonusShape.Bonus |= BonusType.DestroyWholeRowColumn;
 	}
 
 	private IEnumerator FindMatchesAndCollapse(RaycastHit2D hit2)
@@ -480,5 +304,181 @@ public class ShapesManager : MonoBehaviour
 
 		state = GameState.None;
 		StartCheckForPotentialMatches();
+	}
+
+	// Creates a new bonus based on the glyph type given as parameter,
+	// assigns the new GameObject to its proper position in the array,
+	// sets necessary variables via the Assign method,
+	// adds the DestroyWholeRowColumn bonus type to the Bonus property
+	private void CreateBonus(Shape hitGoCache)
+	{
+		GameObject Bonus = Instantiate(GetBonusFromType(hitGoCache.Type), BottomRight
+			+ new Vector2(hitGoCache.Column * GlyphSize.x, hitGoCache.Row * GlyphSize.y), Quaternion.identity)
+			as GameObject;
+		shapes[hitGoCache.Row, hitGoCache.Column] = Bonus;
+		var BonusShape = Bonus.GetComponent<Shape>();
+
+		// Will have the same type as the "normal" glyph
+		BonusShape.Assign(hitGoCache.Type, hitGoCache.Row, hitGoCache.Column);
+
+		// Add the proper Bonus type
+		BonusShape.Bonus |= BonusType.DestroyWholeRowColumn;
+	}
+
+	// Takes the columns that have been missing glyphs as a parameter
+	private AlteredGlyphInfo CreateNewGlyphsInSpecificColumns(IEnumerable<int> columnsWithMissingGlyphs)
+	{
+		AlteredGlyphInfo newGlyphInfo = new AlteredGlyphInfo();
+
+		// Find how many null values the column has
+		foreach (int column in columnsWithMissingGlyphs)
+		{
+			var emptyItems = shapes.GetEmptyItemsOnColumn(column);
+			foreach (var item in emptyItems)
+			{
+				var go = GetRandomGlyph();
+				GameObject newGlyph = Instantiate(go, SpawnPositions[column], Quaternion.identity)
+					as GameObject;
+
+				newGlyph.GetComponent<Shape>().Assign(go.GetComponent<Shape>().Type, item.Row, item.Column);
+
+				if (Constants.Rows - item.Row > newGlyphInfo.MaxDistance)
+				{
+					newGlyphInfo.MaxDistance = Constants.Rows - item.Row;
+				}
+
+				shapes[item.Row, item.Column] = newGlyph;
+				newGlyphInfo.AddGlyph(newGlyph);
+			}
+		}
+
+		return newGlyphInfo;
+	}
+
+	// Utilizes the GoKit animation library to animate a collection of GameObjects to their new position
+	private void MoveAndAnimate(IEnumerable<GameObject> movedGameObjects, int distance)
+	{
+		foreach (var item in movedGameObjects)
+		{
+			item.transform.positionTo(Constants.MoveAnimationMinDuration * distance,
+				BottomRight + new Vector2(item.GetComponent<Shape>().Column * GlyphSize.x,
+				item.GetComponent<Shape>().Row * GlyphSize.y));
+		}
+	}
+
+	// Creates a new explosion, sets it to be destroyed after a specified time, and destroys the glyph
+	// which is passed as a parameter
+	private void RemoveFromScene(GameObject item)
+	{
+		GameObject explosion = GetRandomExplosion();
+		var newExplosion = Instantiate(explosion, item.transform.position, Quaternion.identity) as GameObject;
+		Destroy(newExplosion, Constants.ExplosionDuration);
+		Destroy(item);
+	}
+
+	private GameObject GetRandomGlyph()
+	{
+		return GlyphPrefabs[Random.Range(0, GlyphPrefabs.Length)];
+	}
+
+	// Score-related methods
+	private void InitializeVariables()
+	{
+		score = 0;
+		ShowScore();
+	}
+
+	private void IncreaseScore(int amount)
+	{
+		score += amount;
+		ShowScore();
+	}
+
+	private void ShowScore()
+	{
+		ScoreText.text = "Score: " + score.ToString();
+	}
+
+	// Returns a random explosion prefab
+	private GameObject GetRandomExplosion()
+	{
+		return ExplosionPrefabs[Random.Range(0, ExplosionPrefabs.Length)];
+	}
+
+	// Returns the bonus prefab that corresponds to a normal glyph type
+	private GameObject GetBonusFromType(string type)
+	{
+		string color = type.Split('_')[1].Trim();
+		foreach (var item in BonusPrefabs)
+		{
+			if (item.GetComponent<Shape>().Type.Contains(color))
+			{
+				return item;
+			}
+		}
+
+		throw new System.Exception("Wrong type");
+	}
+
+	// Stops the check if already running and starts the CheckPotentialMatches coroutine
+	private void StartCheckForPotentialMatches()
+	{
+		StopCheckForPotentialMatches();
+
+		// Get a reference to stop it later
+		CheckPotentialMatchesCoroutine = CheckPotentialMatches();
+		StartCoroutine(CheckPotentialMatchesCoroutine);
+	}
+
+	// Attempts to stop both the AnimatePotentialMatches and the CheckPotentialMatches coroutines
+	// Resets the opacity on the items that were previously animated
+	private void StopCheckForPotentialMatches()
+	{
+		if (AnimatePotentialMatchesCoroutine != null)
+		{
+			StopCoroutine(AnimatePotentialMatchesCoroutine);
+		}
+
+		if (CheckPotentialMatchesCoroutine != null)
+		{
+			StopCoroutine(CheckPotentialMatchesCoroutine);
+		}
+
+		ResetOpacityOnPotentialMatches();
+	}
+
+	// Sets the opacity to default (1.0f) at the glyphs that were animated, as potential matches
+	private void ResetOpacityOnPotentialMatches()
+	{
+		if (potentialMatches != null)
+		{
+			foreach (var item in potentialMatches)
+			{
+				if (item == null)
+				{
+					break;
+				}
+
+				Color c = item.GetComponent<SpriteRenderer>().color;
+				c.a = 1.0f;
+				item.GetComponent<SpriteRenderer>().color = c;
+			}
+		}
+	}
+
+	// If there are any matches, animate them
+	private IEnumerator CheckPotentialMatches()
+	{
+		yield return new WaitForSeconds(Constants.WaitBeforePotentialMatchesCheck);
+		potentialMatches = Utilities.GetPotentialMatches(shapes);
+		if (potentialMatches != null)
+		{
+			while (true)
+			{
+				AnimatePotentialMatchesCoroutine = Utilities.AnimatePotentialMatches(potentialMatches);
+				StartCoroutine(AnimatePotentialMatchesCoroutine);
+				yield return new WaitForSeconds(Constants.WaitBeforePotentialMatchesCheck);
+			}
+		}
 	}
 }
