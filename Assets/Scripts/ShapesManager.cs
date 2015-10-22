@@ -260,7 +260,7 @@ public class ShapesManager : MonoBehaviour
 				IncreaseScore(Constants.SubsequentMatchScore);
 			}
 
-			soundManager.PlayGlyph();
+			// soundManager.PlayGlyph();
 
 			foreach (var item in totalMatches)
 			{
