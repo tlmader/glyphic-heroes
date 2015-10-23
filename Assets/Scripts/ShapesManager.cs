@@ -7,12 +7,15 @@ using System.Linq;
 public class ShapesManager : MonoBehaviour
 {
 
-	public Text DebugText, ScoreText;
+	public Text DebugText, ScoreText, CurrentPlayer, Player1Hp, Player2Hp;
 	public bool ShowDebugInfo = false;
 
 	public ShapesArray shapes;
 
 	private int score;
+	private int currentPlayer = 1;
+	private int player1Hp = 10000;
+	private int player2Hp = 10000;
 
 	public readonly Vector2 BottomRight = new Vector2(-2.37f, -4.27f);
 	public readonly Vector2 GlyphSize = new Vector2(0.7f, 0.7f);
@@ -250,6 +253,7 @@ public class ShapesManager : MonoBehaviour
 		}
 
 		int timesRun = 1;
+		bool validTurn = false;
 		while (totalMatches.Count() >= Constants.MinimumMatches)
 		{
 			// Increase score
@@ -259,6 +263,13 @@ public class ShapesManager : MonoBehaviour
 			{
 				IncreaseScore(Constants.SubsequentMatchScore);
 			}
+
+			// Damage player
+			if (totalMatches.Count() >= 3)
+			{
+				DamagePlayer(totalMatches.Count());
+				validTurn = true;
+            }
 
 			// soundManager.PlayGlyph();
 
@@ -300,6 +311,11 @@ public class ShapesManager : MonoBehaviour
 				Union(shapes.GetMatches(newGlyphInfo.AlteredGlyph)).Distinct();
 
 			timesRun++;
+		}
+
+		if (validTurn)
+		{
+			NextTurn();
 		}
 
 		state = GameState.None;
@@ -394,9 +410,51 @@ public class ShapesManager : MonoBehaviour
 		ShowScore();
 	}
 
+	private void NextTurn()
+	{
+		if (currentPlayer == 1)
+		{
+			currentPlayer = 2;
+		}
+		else if (currentPlayer == 2)
+		{
+			currentPlayer = 1;
+		}
+		ShowCurrentPlayer();
+	}
+
+	private void DamagePlayer(int amount)
+	{
+		if (currentPlayer == 1)
+		{
+			player2Hp -= amount;
+			ShowPlayer2Hp();
+		}
+		else if (currentPlayer == 2)
+		{
+			player1Hp -= amount;
+			ShowPlayer1Hp();
+		}
+	}
+
 	private void ShowScore()
 	{
 		ScoreText.text = "Score: " + score.ToString();
+	}
+
+	private void ShowCurrentPlayer()
+	{
+		CurrentPlayer.text = "It is Player " + currentPlayer.ToString() + "'s turn!";
+	}
+
+	private void ShowPlayer1Hp()
+	{
+		Player1Hp.text = "P1 Health: " + player1Hp.ToString();
+	}
+
+	private void ShowPlayer2Hp()
+	{
+		Player2Hp.text = "P2 Health: " + player2Hp.ToString();
 	}
 
 	// Returns a random explosion prefab
