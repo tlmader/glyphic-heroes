@@ -7,15 +7,15 @@ using System.Linq;
 public class ShapesManager : MonoBehaviour
 {
 
-	public Text DebugText, ScoreText, CurrentPlayer, Player1Hp, Player2Hp;
+	public Text DebugText, ScoreText, CurrentPlayer, Player1Health, Player2Health;
 	public bool ShowDebugInfo = false;
 
 	public ShapesArray shapes;
 
 	private int score;
-	private int currentPlayer = 1;
-	private int player1Hp = 10000;
-	private int player2Hp = 10000;
+	private Player player1 = new Player(1);
+	private Player player2 = new Player(2);
+	private Player currentPlayer = null;
 
 	public readonly Vector2 BottomRight = new Vector2(-2.37f, -4.27f);
 	public readonly Vector2 GlyphSize = new Vector2(0.7f, 0.7f);
@@ -267,7 +267,6 @@ public class ShapesManager : MonoBehaviour
 			// Damage player
 			if (totalMatches.Count() >= 3)
 			{
-				DamagePlayer(totalMatches.Count());
 				validTurn = true;
             }
 
@@ -389,6 +388,7 @@ public class ShapesManager : MonoBehaviour
 		GameObject explosion = GetRandomExplosion();
 		var newExplosion = Instantiate(explosion, item.transform.position, Quaternion.identity) as GameObject;
 		Destroy(newExplosion, Constants.ExplosionDuration);
+		ApplyGlyphEffect(item);
 		Destroy(item);
 	}
 
@@ -401,7 +401,11 @@ public class ShapesManager : MonoBehaviour
 	private void InitializeVariables()
 	{
 		score = 0;
+		currentPlayer = player1;
 		ShowScore();
+		ShowCurrentPlayer();
+		ShowPlayer1Health();
+		ShowPlayer2Health();
 	}
 
 	private void IncreaseScore(int amount)
@@ -412,29 +416,36 @@ public class ShapesManager : MonoBehaviour
 
 	private void NextTurn()
 	{
-		if (currentPlayer == 1)
+		if (currentPlayer.Index == 1)
 		{
-			currentPlayer = 2;
+			currentPlayer = player2;
 		}
-		else if (currentPlayer == 2)
+		else if (currentPlayer.Index == 2)
 		{
-			currentPlayer = 1;
+			currentPlayer = player1;
 		}
 		ShowCurrentPlayer();
 	}
 
-	private void DamagePlayer(int amount)
+	private void ApplyGlyphEffect(GameObject item)
 	{
-		if (currentPlayer == 1)
+		var type = item.GetComponent<Shape>().Type.Split('_')[2];
+        if (type == "attack")
 		{
-			player2Hp -= amount;
-			ShowPlayer2Hp();
+			if (currentPlayer.Armor > 0)
+			{
+				currentPlayer.Armor--;
+			}
+			else
+			{
+				currentPlayer.Health--;
+			}
 		}
-		else if (currentPlayer == 2)
+		else if (type == "defend")
 		{
-			player1Hp -= amount;
-			ShowPlayer1Hp();
+			currentPlayer.Armor++;
 		}
+		ShowCurrentPlayerHealth();
 	}
 
 	private void ShowScore()
@@ -447,14 +458,26 @@ public class ShapesManager : MonoBehaviour
 		CurrentPlayer.text = "It is Player " + currentPlayer.ToString() + "'s turn!";
 	}
 
-	private void ShowPlayer1Hp()
+	private void ShowCurrentPlayerHealth()
 	{
-		Player1Hp.text = "P1 Health: " + player1Hp.ToString();
+		if (currentPlayer.Index == 1)
+		{
+			ShowPlayer1Health();
+		}
+		else if (currentPlayer.Index == 2)
+		{
+			ShowPlayer2Health();
+		}
 	}
 
-	private void ShowPlayer2Hp()
+	private void ShowPlayer1Health()
 	{
-		Player2Hp.text = "P2 Health: " + player2Hp.ToString();
+		Player1Health.text = "P1 Health: " + player1.Health.ToString();
+	}
+
+	private void ShowPlayer2Health()
+	{
+		Player2Health.text = "P2 Health: " + player2.Health.ToString();
 	}
 
 	// Returns a random explosion prefab
@@ -538,5 +561,19 @@ public class ShapesManager : MonoBehaviour
 				yield return new WaitForSeconds(Constants.WaitBeforePotentialMatchesCheck);
 			}
 		}
+	}
+}
+
+public class Player
+{
+	public int Index;
+	public int Health;
+	public int Armor;
+
+	public Player(int index)
+	{
+		Index = index;
+		Health = 100;
+		Armor = 0;
 	}
 }
