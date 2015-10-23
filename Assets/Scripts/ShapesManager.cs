@@ -7,7 +7,7 @@ using System.Linq;
 public class ShapesManager : MonoBehaviour
 {
 
-	public Text DebugText, ScoreText, CurrentPlayer, Player1Health, Player2Health;
+	public Text DebugText, ScoreText, CurrentPlayer, Player1Status, Player2Status;
 	public bool ShowDebugInfo = false;
 
 	public ShapesArray shapes;
@@ -15,7 +15,7 @@ public class ShapesManager : MonoBehaviour
 	private int score;
 	private Player player1 = new Player(1);
 	private Player player2 = new Player(2);
-	private Player currentPlayer = null;
+	private Player currentPlayer, otherPlayer;
 
 	public readonly Vector2 BottomRight = new Vector2(-2.37f, -4.27f);
 	public readonly Vector2 GlyphSize = new Vector2(0.7f, 0.7f);
@@ -48,6 +48,93 @@ public class ShapesManager : MonoBehaviour
 		InitializeGlyphAndSpawnPositions();
 
 		StartCheckForPotentialMatches();
+	}
+
+	// Score-related methods
+	private void InitializeVariables()
+	{
+		score = 0;
+		currentPlayer = player1;
+		otherPlayer = player2;
+		ShowScore();
+		ShowCurrentPlayer();
+		ShowPlayer1Status();
+		ShowPlayer2Status();
+	}
+
+	private void IncreaseScore(int amount)
+	{
+		score += amount;
+		ShowScore();
+	}
+
+	private void NextTurn()
+	{
+		if (currentPlayer.Index == 1)
+		{
+			currentPlayer = player2;
+			otherPlayer = player1;
+		}
+		else if (currentPlayer.Index == 2)
+		{
+			currentPlayer = player1;
+			otherPlayer = player2;
+		}
+		ShowCurrentPlayer();
+	}
+
+	private void ApplyGlyphEffect(GameObject item)
+	{
+		var type = item.GetComponent<Shape>().Type.Split('_')[2];
+		if (type == "attack")
+		{
+			if (otherPlayer.Armor > 0)
+			{
+				otherPlayer.Armor--;
+			}
+			else
+			{
+				otherPlayer.Health--;
+			}
+			ShowPlayerStatus(otherPlayer);
+		}
+		else if (type == "defend")
+		{
+			currentPlayer.Armor++;
+			ShowPlayerStatus(currentPlayer);
+		}
+	}
+
+	private void ShowScore()
+	{
+		ScoreText.text = "Score: " + score.ToString();
+	}
+
+	private void ShowCurrentPlayer()
+	{
+		CurrentPlayer.text = "It is Player " + currentPlayer.Index.ToString() + "'s turn!";
+	}
+
+	private void ShowPlayerStatus(Player player)
+	{
+		if (player.Index == 1)
+		{
+			ShowPlayer1Status();
+		}
+		else if (player.Index == 2)
+		{
+			ShowPlayer2Status();
+		}
+	}
+
+	private void ShowPlayer1Status()
+	{
+		Player1Status.text = "Player 1 | Health: " + player1.Health.ToString() + " | Armor: " + player1.Armor.ToString();
+	}
+
+	private void ShowPlayer2Status()
+	{
+		Player2Status.text = "Player 2 | Health: " + player2.Health.ToString() + " | Armor: " + player2.Armor.ToString();
 	}
 
 	// Initialize shapes
@@ -264,7 +351,7 @@ public class ShapesManager : MonoBehaviour
 				IncreaseScore(Constants.SubsequentMatchScore);
 			}
 
-			// Damage player
+			// Set turn as valid
 			if (totalMatches.Count() >= 3)
 			{
 				validTurn = true;
@@ -397,89 +484,6 @@ public class ShapesManager : MonoBehaviour
 		return GlyphPrefabs[Random.Range(0, GlyphPrefabs.Length)];
 	}
 
-	// Score-related methods
-	private void InitializeVariables()
-	{
-		score = 0;
-		currentPlayer = player1;
-		ShowScore();
-		ShowCurrentPlayer();
-		ShowPlayer1Health();
-		ShowPlayer2Health();
-	}
-
-	private void IncreaseScore(int amount)
-	{
-		score += amount;
-		ShowScore();
-	}
-
-	private void NextTurn()
-	{
-		if (currentPlayer.Index == 1)
-		{
-			currentPlayer = player2;
-		}
-		else if (currentPlayer.Index == 2)
-		{
-			currentPlayer = player1;
-		}
-		ShowCurrentPlayer();
-	}
-
-	private void ApplyGlyphEffect(GameObject item)
-	{
-		var type = item.GetComponent<Shape>().Type.Split('_')[2];
-        if (type == "attack")
-		{
-			if (currentPlayer.Armor > 0)
-			{
-				currentPlayer.Armor--;
-			}
-			else
-			{
-				currentPlayer.Health--;
-			}
-		}
-		else if (type == "defend")
-		{
-			currentPlayer.Armor++;
-		}
-		ShowCurrentPlayerHealth();
-	}
-
-	private void ShowScore()
-	{
-		ScoreText.text = "Score: " + score.ToString();
-	}
-
-	private void ShowCurrentPlayer()
-	{
-		CurrentPlayer.text = "It is Player " + currentPlayer.ToString() + "'s turn!";
-	}
-
-	private void ShowCurrentPlayerHealth()
-	{
-		if (currentPlayer.Index == 1)
-		{
-			ShowPlayer1Health();
-		}
-		else if (currentPlayer.Index == 2)
-		{
-			ShowPlayer2Health();
-		}
-	}
-
-	private void ShowPlayer1Health()
-	{
-		Player1Health.text = "P1 Health: " + player1.Health.ToString();
-	}
-
-	private void ShowPlayer2Health()
-	{
-		Player2Health.text = "P2 Health: " + player2.Health.ToString();
-	}
-
 	// Returns a random explosion prefab
 	private GameObject GetRandomExplosion()
 	{
@@ -566,9 +570,9 @@ public class ShapesManager : MonoBehaviour
 
 public class Player
 {
-	public int Index;
-	public int Health;
-	public int Armor;
+	public int Index { get; set; }
+	public int Health { get; set; }
+	public int Armor { get; set; }
 
 	public Player(int index)
 	{
