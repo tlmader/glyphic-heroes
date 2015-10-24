@@ -598,7 +598,7 @@ public class Player
 	public Player(int index)
 	{
 		Index = index;
-		Health = 1;
+		Health = 30;
 		Armor = 0;
 	}
 }
