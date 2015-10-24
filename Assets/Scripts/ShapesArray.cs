@@ -12,6 +12,11 @@ public class ShapesArray : MonoBehaviour {
 	private GameObject backupG1;
 	private GameObject backupG2;
 
+	public int length()
+	{
+		return shapes.Length;
+	}
+
 	// Indexer that returns the specific GameObject via requested column/row
 	public GameObject this[int row, int column]
 	{

@@ -7,15 +7,16 @@ using System.Linq;
 public class ShapesManager : MonoBehaviour
 {
 
-	public Text DebugText, ScoreText, CurrentPlayer, Player1Status, Player2Status;
+	public Text DebugText, ScoreText, CurrentPlayer, Player1Status, Player2Status, GameOver;
 	public bool ShowDebugInfo = false;
+
+	private bool empty = true;
+	private bool gameOver = false;
 
 	public ShapesArray shapes;
 
 	private int score;
-	private Player player1 = new Player(1);
-	private Player player2 = new Player(2);
-	private Player currentPlayer, otherPlayer;
+	private Player player1, player2, currentPlayer, otherPlayer;
 
 	public readonly Vector2 BottomRight = new Vector2(-2.37f, -4.27f);
 	public readonly Vector2 GlyphSize = new Vector2(0.7f, 0.7f);
@@ -54,6 +55,9 @@ public class ShapesManager : MonoBehaviour
 	private void InitializeVariables()
 	{
 		score = 0;
+		gameOver = false;
+		player1 = new Player(1);
+		player2 = new Player(2);
 		currentPlayer = player1;
 		otherPlayer = player2;
 		ShowScore();
@@ -96,6 +100,11 @@ public class ShapesManager : MonoBehaviour
 			{
 				otherPlayer.Health--;
 			}
+			if (otherPlayer.Health <= 0)
+			{
+				otherPlayer.Health = 0;
+				gameOver = true;
+			}
 			ShowPlayerStatus(otherPlayer);
 		}
 		else if (type == "defend")
@@ -137,6 +146,14 @@ public class ShapesManager : MonoBehaviour
 		Player2Status.text = "Player 2 | Health: " + player2.Health.ToString() + " | Armor: " + player2.Armor.ToString();
 	}
 
+	private void SetToGameOver()
+	{
+		CurrentPlayer.text = "";
+		GameOver.text = "Player " + currentPlayer.Index.ToString() + " is victorious!";
+		DestroyAllGlyphs();
+		empty = true;
+	}
+
 	// Initialize shapes
 	private void InitializeTypesOnPrefabShapesAndBonuses()
 	{
@@ -162,12 +179,12 @@ public class ShapesManager : MonoBehaviour
 	{
 		InitializeVariables();
 
-		if (shapes != null)
+		if (!empty)
 		{
 			DestroyAllGlyphs();
 		}
-
 		shapes = new ShapesArray();
+		empty = false;
 		SpawnPositions = new Vector2[Constants.Columns];
 
 		for (int row = 0; row < Constants.Rows; row++)
@@ -399,7 +416,11 @@ public class ShapesManager : MonoBehaviour
 			timesRun++;
 		}
 
-		if (validTurn)
+		if (gameOver)
+		{
+			SetToGameOver();
+		}
+		else if (validTurn)
 		{
 			NextTurn();
 		}
@@ -577,7 +598,7 @@ public class Player
 	public Player(int index)
 	{
 		Index = index;
-		Health = 100;
+		Health = 1;
 		Armor = 0;
 	}
 }
