@@ -56,6 +56,7 @@ public class ShapesManager : MonoBehaviour
 	{
 		score = 0;
 		gameOver = false;
+		GameOver.text = "";
 		player1 = new Player(1);
 		player2 = new Player(2);
 		currentPlayer = player1;
@@ -105,12 +106,14 @@ public class ShapesManager : MonoBehaviour
 				otherPlayer.Health = 0;
 				gameOver = true;
 			}
+			soundManager.PlayAttack();
 			ShowPlayerStatus(otherPlayer);
 		}
 		else if (type == "defend")
 		{
 			currentPlayer.Armor++;
-			ShowPlayerStatus(currentPlayer);
+			soundManager.PlayDefend();
+            ShowPlayerStatus(currentPlayer);
 		}
 	}
 
@@ -149,6 +152,7 @@ public class ShapesManager : MonoBehaviour
 	private void SetToGameOver()
 	{
 		CurrentPlayer.text = "";
+		soundManager.PlayGameOver();
 		GameOver.text = "Player " + currentPlayer.Index.ToString() + " is victorious!";
 		DestroyAllGlyphs();
 		empty = true;
@@ -178,6 +182,8 @@ public class ShapesManager : MonoBehaviour
 	public void InitializeGlyphAndSpawnPositions()
 	{
 		InitializeVariables();
+
+		soundManager.PlayStart();
 
 		if (!empty)
 		{
@@ -373,8 +379,6 @@ public class ShapesManager : MonoBehaviour
 			{
 				validTurn = true;
             }
-
-			// soundManager.PlayGlyph();
 
 			foreach (var item in totalMatches)
 			{

@@ -2,12 +2,15 @@
 
 public class SoundManager : MonoBehaviour {
 
-	public AudioClip glyphAudioClip;
-	AudioSource glyph;
+	public AudioClip startAudioClip, attackAudioClip, defendAudioClip, gameOverAudioClip;
+	AudioSource start, attack, defend, gameOver;
 
 	void Awake()
 	{
-		glyph = AddAudio(glyphAudioClip);
+		start = AddAudio(startAudioClip);
+		attack = AddAudio(attackAudioClip);
+		defend = AddAudio(defendAudioClip);
+		gameOver = AddAudio(gameOverAudioClip);
 	}
 
 	AudioSource AddAudio(AudioClip audioClip)
@@ -18,8 +21,23 @@ public class SoundManager : MonoBehaviour {
 		return audioSource;
 	}
 
-	public void PlayGlyph()
+	public void PlayStart()
 	{
-		glyph.Play();
+		start.Play();
+	}
+
+	public void PlayAttack()
+	{
+		attack.Play();
+	}
+
+	public void PlayDefend()
+	{
+		defend.Play();
+	}
+
+	public void PlayGameOver()
+	{
+		gameOver.Play();
 	}
 }
