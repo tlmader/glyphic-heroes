@@ -591,6 +591,11 @@ public class ShapesManager : MonoBehaviour
 			}
 		}
 	}
+
+	public void Exit()
+	{
+		Application.Quit();
+	}
 }
 
 public class Player
